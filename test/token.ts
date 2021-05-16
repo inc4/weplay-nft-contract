@@ -1,8 +1,14 @@
 import { ethers } from "hardhat";
-import { expect } from "chai";
-import type { Contract } from "ethers";
+import type { Contract, Signer } from "ethers";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 
-describe("Token", function () {
+chai.use(chaiAsPromised);
+chai.should();
+const expect = chai.expect;
+
+describe("Token", () => {
+  let accounts: Signer[];
   // const owner = "";
   let account1 = "";
   let account2 = "";
@@ -10,7 +16,7 @@ describe("Token", function () {
   let token: Contract;
 
   before(async () => {
-    const accounts = await ethers.getSigners();
+    accounts = await ethers.getSigners();
     // owner = await accounts[0].getAddress();
     account1 = await accounts[1].getAddress();
     account2 = await accounts[2].getAddress();
@@ -23,7 +29,7 @@ describe("Token", function () {
     await token.mint(account2, uri + "3");
   });
 
-  it("should be minted", async function () {
+  it("should be minted", async () => {
     expect(await token.ownerOf(1)).to.equal(account1);
     expect(await token.ownerOf(2)).to.equal(account2);
     expect(await token.ownerOf(3)).to.equal(account2);
@@ -33,5 +39,11 @@ describe("Token", function () {
 
   it("should have proper uri", async () => {
     expect(await token.tokenURI(1)).to.equal(uri + "1");
+  });
+
+  it("should deny to mint from wrong address", async () => {
+    await token.connect(accounts[0]).mint(account1, uri).should.not.to.be
+      .rejected;
+    await token.connect(accounts[1]).mint(account1, uri).should.be.rejected;
   });
 });
