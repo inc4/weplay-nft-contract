@@ -7,6 +7,12 @@ chai.use(chaiAsPromised);
 chai.should();
 const expect = chai.expect;
 
+const adminRole =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
+const minterRole = ethers.utils.keccak256(
+  ethers.utils.toUtf8Bytes("MINTER_ROLE")
+);
+
 describe("Token", () => {
   let accounts: Signer[];
   let owner = "";
@@ -14,9 +20,6 @@ describe("Token", () => {
   let account2 = "";
   const uri = "https://host/path";
   let token: Contract;
-  const minterRole = ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes("MINTER_ROLE")
-  );
 
   before(async () => {
     accounts = await ethers.getSigners();
@@ -58,6 +61,25 @@ describe("Token", () => {
     expect(await token.hasRole(minterRole, account1)).to.be.true;
     await token.revokeRole(minterRole, account1);
     expect(await token.hasRole(minterRole, account1)).to.be.false;
+  });
+
+  it("should grant admin role", async () => {
+    await token.grantRole(adminRole, account1);
+    await token.revokeRole(adminRole, owner);
+    expect(await token.hasRole(adminRole, owner)).to.be.false;
+    expect(await token.hasRole(adminRole, account1)).to.be.true;
+    expect(await token.hasRole(minterRole, owner)).to.be.true;
+    await token.connect(accounts[1]).grantRole(adminRole, owner);
+    await token.revokeRole(adminRole, account1);
+  });
+
+  it("should not allow minter to grant roles", async () => {
+    await token.grantRole(minterRole, account1);
+    await token.connect(accounts[1]).grantRole(adminRole, account2).should.be
+      .rejected;
+    await token.connect(accounts[1]).grantRole(minterRole, account2).should.be
+      .rejected;
+    await token.revokeRole(minterRole, account1);
   });
 
   it("should use minter role", async () => {
