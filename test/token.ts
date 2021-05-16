@@ -9,15 +9,18 @@ const expect = chai.expect;
 
 describe("Token", () => {
   let accounts: Signer[];
-  // const owner = "";
+  let owner = "";
   let account1 = "";
   let account2 = "";
   const uri = "https://host/path";
   let token: Contract;
+  const minterRole = ethers.utils.keccak256(
+    ethers.utils.toUtf8Bytes("MINTER_ROLE")
+  );
 
   before(async () => {
     accounts = await ethers.getSigners();
-    // owner = await accounts[0].getAddress();
+    owner = await accounts[0].getAddress();
     account1 = await accounts[1].getAddress();
     account2 = await accounts[2].getAddress();
 
@@ -45,5 +48,23 @@ describe("Token", () => {
     await token.connect(accounts[0]).mint(account1, uri).should.not.to.be
       .rejected;
     await token.connect(accounts[1]).mint(account1, uri).should.be.rejected;
+  });
+
+  it("should grant minter role", async () => {
+    expect(await token.hasRole(minterRole, owner)).to.be.true;
+    expect(await token.hasRole(minterRole, account1)).to.be.false;
+    await token.grantRole(minterRole, account1);
+    expect(await token.hasRole(minterRole, owner)).to.be.true;
+    expect(await token.hasRole(minterRole, account1)).to.be.true;
+    await token.revokeRole(minterRole, account1);
+    expect(await token.hasRole(minterRole, account1)).to.be.false;
+  });
+
+  it("should use minter role", async () => {
+    await token.grantRole(minterRole, account2);
+    await token.revokeRole(minterRole, owner);
+    await token.mint(account1, uri).should.be.rejected;
+    await token.connect(accounts[2]).mint(account1, uri).should.not.to.be
+      .rejected;
   });
 });
