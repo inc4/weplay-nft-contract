@@ -20,6 +20,7 @@ describe("Token", () => {
   let account2 = "";
   const uri = "https://host/path";
   let token: Contract;
+  const proxyRegistryRinkeby = "0xf57b2c51ded3a29e6891aba85459d600256cf317";
 
   before(async () => {
     accounts = await ethers.getSigners();
@@ -28,7 +29,7 @@ describe("Token", () => {
     account2 = await accounts[2].getAddress();
 
     const tokenFactory = await ethers.getContractFactory("Token");
-    token = await tokenFactory.deploy();
+    token = await tokenFactory.deploy(proxyRegistryRinkeby);
 
     await token.mint(account1, uri + "1");
     await token.mint(account2, uri + "2");
