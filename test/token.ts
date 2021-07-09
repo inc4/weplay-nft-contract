@@ -18,7 +18,7 @@ describe("Token", () => {
   let owner = "";
   let account1 = "";
   let account2 = "";
-  let proxy = "";
+  let proxyAddress = "";
   const uri = "https://host/path";
   let token: Contract;
 
@@ -27,11 +27,15 @@ describe("Token", () => {
     owner = await accounts[0].getAddress();
     account1 = await accounts[1].getAddress();
     account2 = await accounts[2].getAddress();
-    // TODO, have to be proxy contract
-    proxy = await accounts[5].getAddress();
+
+    const proxyFactory = await ethers.getContractFactory(
+      "contracts/Proxy.sol:ProxyRegistry"
+    );
+    const proxy = await proxyFactory.deploy();
+    proxyAddress = proxy.address;
 
     const tokenFactory = await ethers.getContractFactory("Token");
-    token = await tokenFactory.deploy(proxy);
+    token = await tokenFactory.deploy(proxyAddress);
 
     await token.mint(account1, uri + "1");
     await token.mint(account2, uri + "2");
@@ -95,7 +99,7 @@ describe("Token", () => {
 
   it("should approve proxy address to transfer token", async () => {
     // TODO
-    // await token.connect(accounts[5]).transferFrom(account1, account2, 1);
-    // expect(await token.ownerOf(1)).to.equal(account2);
+    await token.connect(accounts[0]).transferFrom(account1, account2, 1);
+    expect(await token.ownerOf(1)).to.equal(account2);
   });
 });
