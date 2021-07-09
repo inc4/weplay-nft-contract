@@ -18,18 +18,20 @@ describe("Token", () => {
   let owner = "";
   let account1 = "";
   let account2 = "";
+  let proxy = "";
   const uri = "https://host/path";
   let token: Contract;
-  const proxyRegistryRinkeby = "0xf57b2c51ded3a29e6891aba85459d600256cf317";
 
   before(async () => {
     accounts = await ethers.getSigners();
     owner = await accounts[0].getAddress();
     account1 = await accounts[1].getAddress();
     account2 = await accounts[2].getAddress();
+    // TODO, have to be proxy contract
+    proxy = await accounts[5].getAddress();
 
     const tokenFactory = await ethers.getContractFactory("Token");
-    token = await tokenFactory.deploy(proxyRegistryRinkeby);
+    token = await tokenFactory.deploy(proxy);
 
     await token.mint(account1, uri + "1");
     await token.mint(account2, uri + "2");
@@ -89,5 +91,11 @@ describe("Token", () => {
     await token.mint(account1, uri).should.be.rejected;
     await token.connect(accounts[2]).mint(account1, uri).should.not.to.be
       .rejected;
+  });
+
+  it("should approve proxy address to transfer token", async () => {
+    // TODO
+    // await token.connect(accounts[5]).transferFrom(account1, account2, 1);
+    // expect(await token.ownerOf(1)).to.equal(account2);
   });
 });
