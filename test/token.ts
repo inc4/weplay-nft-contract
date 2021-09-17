@@ -19,7 +19,9 @@ describe("Token", () => {
   let account1 = "";
   let account2 = "";
   const uri = "https://host/path";
+
   let token: Contract;
+  let proxyRegistry: Contract;
 
   before(async () => {
     accounts = await ethers.getSigners();
@@ -30,16 +32,14 @@ describe("Token", () => {
     const proxyFactory = await ethers.getContractFactory(
       "contracts/Proxy.sol:WyvernProxyRegistry"
     );
-    const proxy = await proxyFactory.deploy();
+    proxyRegistry = await proxyFactory.deploy();
 
     const tokenFactory = await ethers.getContractFactory("Token");
-    token = await tokenFactory.deploy(proxy.address);
+    token = await tokenFactory.deploy(proxyRegistry.address);
 
     await token.mint(account1, uri + "1");
     await token.mint(account2, uri + "2");
     await token.mint(account2, uri + "3");
-
-    await proxy.connect(accounts[1]).registerProxy();
   });
 
   it("should be minted", async () => {
@@ -98,7 +98,20 @@ describe("Token", () => {
   });
 
   it("should approve proxy address to transfer token", async () => {
-    await token.connect(accounts[1]).transferFrom(account1, account2, 1);
+    await proxyRegistry.connect(accounts[1]).registerProxy();
+    const proxyImplAddress = await proxyRegistry.proxies(account1);
+    const proxyImpl = await ethers.getContractAt(
+      "AuthenticatedProxy",
+      proxyImplAddress,
+      accounts[1]
+    );
+
+    const calldata = token.interface.encodeFunctionData(
+      token.interface.functions["transferFrom(address,address,uint256)"],
+      [account1, account2, 1]
+    );
+    await proxyImpl.proxy(token.address, 0, calldata);
+
     expect(await token.ownerOf(1)).to.equal(account2);
   });
 });
