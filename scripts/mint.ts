@@ -19,14 +19,16 @@ async function main(
   const Token = await ethers.getContractFactory("Token");
   const token = await Token.attach(contractAddress);
 
-  const mintPromises = [];
-  const dirs = await fs.readdir(tokensDir);
+  const uploadAndMint = async (tokenName: string) => {
+    const url = await uploadToken(tokensDir + tokenName + "/");
+    console.log(tokenName, " => ", url);
+    await token.mint(mintTo, url);
+  };
 
-  for (const dir of dirs) {
-    const url = await uploadToken(tokensDir + dir + "/");
-    console.log(dir, " => ", url);
-    mintPromises.push(token.mint(mintTo, url));
-  }
+  const mintPromises = [];
+
+  for (const dir of await fs.readdir(tokensDir))
+    mintPromises.push(uploadAndMint(dir));
 
   await Promise.all(mintPromises);
 }
