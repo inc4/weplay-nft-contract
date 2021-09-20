@@ -19,7 +19,9 @@ describe("Token", () => {
   let account1 = "";
   let account2 = "";
   const uri = "https://host/path";
+
   let token: Contract;
+  let proxyRegistry: Contract;
 
   before(async () => {
     accounts = await ethers.getSigners();
@@ -27,8 +29,13 @@ describe("Token", () => {
     account1 = await accounts[1].getAddress();
     account2 = await accounts[2].getAddress();
 
+    const proxyFactory = await ethers.getContractFactory(
+      "contracts/Proxy.sol:WyvernProxyRegistry"
+    );
+    proxyRegistry = await proxyFactory.deploy();
+
     const tokenFactory = await ethers.getContractFactory("Token");
-    token = await tokenFactory.deploy();
+    token = await tokenFactory.deploy(proxyRegistry.address);
 
     await token.mint(account1, uri + "1");
     await token.mint(account2, uri + "2");
@@ -88,5 +95,23 @@ describe("Token", () => {
     await token.mint(account1, uri).should.be.rejected;
     await token.connect(accounts[2]).mint(account1, uri).should.not.to.be
       .rejected;
+  });
+
+  it("should approve proxy address to transfer token", async () => {
+    await proxyRegistry.connect(accounts[1]).registerProxy();
+    const proxyImplAddress = await proxyRegistry.proxies(account1);
+    const proxyImpl = await ethers.getContractAt(
+      "AuthenticatedProxy",
+      proxyImplAddress,
+      accounts[1]
+    );
+
+    const calldata = token.interface.encodeFunctionData(
+      token.interface.functions["transferFrom(address,address,uint256)"],
+      [account1, account2, 1]
+    );
+    await proxyImpl.proxy(token.address, 0, calldata);
+
+    expect(await token.ownerOf(1)).to.equal(account2);
   });
 });
