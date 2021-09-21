@@ -9,7 +9,7 @@
   "scripts": {
     "build": "hardhat compile",
     "deploy": "hardhat run ./scripts/deploy.ts",
-    "mint": "hardhat run ./scripts/mint.ts  --network rinkeby",
+    "mint": "hardhat run ./scripts/mint.ts",
     "test": "hardhat test",
     "lint": "eslint .",
     "console": "hardhat console"

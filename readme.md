@@ -63,4 +63,8 @@ $ yarn deploy --network <network>
 For each token, create a folder in `./tokens/` and put `img.png` and `index.json` there  
 For example `./tokens/example/img.png` `./tokens/example/index.json`
 
-Then run `hardhat run ./scripts/mint.ts  --network <network>` to mint
+Then run 
+```sh
+$ yarn mint --network <network>
+```
+to mint
