@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import Arweave from "arweave";
 import * as key from "./key.json"; // arweave wallet
 import Transaction from "arweave/node/lib/transaction";
+import * as path from "path";
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -19,18 +20,13 @@ async function main(
   const Token = await ethers.getContractFactory("Token");
   const token = await Token.attach(contractAddress);
 
-  const uploadAndMint = async (tokenName: string) => {
+  for (const tokenName of await fs.readdir(tokensDir)) {
+    if (!(await input(tokenName))) continue;
+
     const url = await uploadToken(tokensDir + tokenName + "/");
     console.log(tokenName, " => ", url);
     await token.mint(mintTo, url);
-  };
-
-  const mintPromises = [];
-
-  for (const dir of await fs.readdir(tokensDir))
-    mintPromises.push(uploadAndMint(dir));
-
-  await Promise.all(mintPromises);
+  }
 }
 
 async function uploadToken(path: string) {
@@ -70,12 +66,25 @@ const txPrice = async (tx: Transaction) =>
   +arweave.ar.winstonToAr(await arweave.transactions.getPrice(tx.data.length));
 
 main(
-  "0x6a8441e991d45efd94c65ed8f200e6fcf94eeee4",
-  "0x153190c9A6fAF497273b9a27eD0fF2fc5E4a7B9a",
-  "../tokens/"
+  // @ts-ignore
+  process.env.CONTRACT_ADDRESS,
+  process.env.MINT_TO_ADDRESS,
+  path.join(__dirname, "..", "tokens", "/")
 )
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);
     process.exit(1);
   });
+
+const input = (tokenName: string) => {
+  while (true) {
+    const r = prompt(
+      `Minting token '${tokenName}'. \t y - mint, n - skip, CTRL+C - cancel `
+    );
+    if (r == "y" || r == "Y") return true;
+    if (r == "n" || r == "N") return false;
+  }
+};
+
+const prompt = require("prompt-sync")({ sigint: true });
