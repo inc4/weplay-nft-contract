@@ -23,7 +23,7 @@ async function main(
   for (const tokenName of await fs.readdir(tokensDir)) {
     if (!(await input(tokenName))) continue;
 
-    const url = await uploadToken(tokensDir + tokenName + "/");
+    const url = await uploadToken(path.join(tokensDir, tokenName, "/"));
     console.log(tokenName, " => ", url);
     await token.mint(mintTo, url);
   }
@@ -69,7 +69,7 @@ main(
   // @ts-ignore
   process.env.CONTRACT_ADDRESS,
   process.env.MINT_TO_ADDRESS,
-  path.join(__dirname, "..", "tokens", "/")
+  "tokens"
 )
   .then(() => process.exit(0))
   .catch((error) => {
